@@ -3,11 +3,19 @@
 public class BasketballController : MonoBehaviour
 {
     // Constants
-    private const string PLAYERNAME = "Player1";
 
     [Header("Variables")]
     [SerializeField] private float moveSpeed = 10f; // speed of movement (DO NOT CHANGE)
     [SerializeField] private float jumpHeight = 10f; // height of jump (DO NOT CHANGE)
+                                                     
+    private Vector3 direction; // direction where the player is moving
+    private float runSpeed = 2f; // running multiplyer
+    private float sprintLevel = 4f; // the remaining sprint amount
+    private float exhaustLevel = 2f;
+    private float TDunk = 0f; // dunk position interpolation variable
+    private float dunkDuration = 0.2f; // duration of the dunk
+    Vector3 DunkPos; // the position from where the player will dunk
+    int shotType; // 1- dunk, 2- two pointer, 3- three pointer
 
     [Header("Referrences")]
 
@@ -24,14 +32,6 @@ public class BasketballController : MonoBehaviour
     private Rigidbody playerRigidbody;
     private BallController ballController;
 
-    // Variables
-    private Vector3 direction; // direction where the player is moving
-    private float runSpeed = 2f; // running multiplyer
-    private float TDunk = 0f; // dunk position interpolation variable
-    private float dunkDuration = 0.2f; // duration of the dunk
-    Vector3 DunkPos; // the position from where the player will dunk
-    int shotType; // 1- dunk, 2- two pointer, 3- three pointer
-
     // Booleans
     private bool isInAir = false; // when the player is in the air
     private bool isSpaceReleasedAfterJump = false; // when the space is released after jumping with the ball
@@ -39,11 +39,14 @@ public class BasketballController : MonoBehaviour
     private bool isJumping = false; // jumping boolean
     private bool isDunkPositionSet = false; // setting the position from where the player will dunk
     private bool isPreparedToDunk = false; // when I press the space the second time in the dunking zone
+    private bool isActive = false; // when the player is active(is controlled by the user)
+    private bool isExhausted = false; // when using all the stamina it will take some time for it to recharge
     
     private void Start()
     {
         playerRigidbody = GetComponent<Rigidbody>();
         ballController = Ball.GetComponent<BallController>(); // referring to the basketball
+        isActive = true;
     }
 
     // Update is called once per frame
@@ -52,22 +55,10 @@ public class BasketballController : MonoBehaviour
         // Changing direction of the player based on input
         direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
 
-        if (!Input.GetKey(KeyCode.Space))
-        {
-            // Sprinting
-            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-            {
-                isSprinting = true;
-            }
-            // Walking
-            else
-            {
-                isSprinting = false;
-            }
-        }
+        Sprint(); // Sprinting
 
         // Ball in hands
-        if (ballController.getIsBallInHands(PLAYERNAME))
+        if (ballController.getIsBallInHands(gameObject.name))
         {
             ShootingMechanism(); // implementing the shooting mechanism
         }
@@ -121,7 +112,7 @@ public class BasketballController : MonoBehaviour
         }
 
         // Looking at the rim
-        if (ballController.getIsBallInHands(PLAYERNAME))
+        if (ballController.getIsBallInHands(gameObject.name))
         {
             LookAtTarget(Target);
         }
@@ -151,9 +142,9 @@ public class BasketballController : MonoBehaviour
             SetShootingForm("Dunk");
 
         // When catching the ball
-        if (!ballController.getIsBallFlying() && !ballController.getIsBallInHands(PLAYERNAME) && collision.gameObject.name == "Ball")
+        if (!ballController.getIsBallFlying() && !ballController.getIsBallInHands(gameObject.name) && collision.gameObject.name == "Ball")
         {
-            ballController.setIsballInHands(true, PLAYERNAME);
+            ballController.setIsballInHands(true, gameObject.name);
             Ball.GetComponent<Rigidbody>().isKinematic = true;
             Ball.GetComponent<Collider>().enabled = false;
         }
@@ -199,7 +190,7 @@ public class BasketballController : MonoBehaviour
     private void HandsDown()
     {
         // Putting hands in normal position
-        if (!ballController.getIsBallInHands(PLAYERNAME) && !isInAir && !ballController.getIsBallFlying())
+        if (!ballController.getIsBallInHands(gameObject.name) && !isInAir && !ballController.getIsBallFlying())
         {
             RightHand.localEulerAngles = Vector3.left * 0;
             Arms.localEulerAngles = Vector3.left * 0;
@@ -239,7 +230,7 @@ public class BasketballController : MonoBehaviour
 
         // Preventing double jumping
         isJumping = false;
-    }
+    } // Jumping mechanism
 
     private void Shoot()
     {
@@ -256,13 +247,57 @@ public class BasketballController : MonoBehaviour
         }
 
         Ball.GetComponent<Collider>().enabled = true; // Giving back collisions for the ball
+    } // Shooting mechanism
+
+    private void Sprint() // Sprinting mechanism
+    {
+        // Changing direction of the player based on input
+        direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
+
+        if (!Input.GetKey(KeyCode.Space))
+        {
+            // Sprinting
+            if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && sprintLevel > 0)
+            {
+                isSprinting = true;
+                sprintLevel -= Time.deltaTime; // decreasing the sprint level
+                sprintLevel = Mathf.Max(sprintLevel, 0);
+            }
+            // Walking
+            else
+            {
+                isSprinting = false;
+
+                if (!isExhausted)
+                {
+                    sprintLevel += Time.deltaTime; // increasing the sprint level
+                    sprintLevel = Mathf.Min(sprintLevel, 4);
+                }
+            }
+        }
+
+        if (sprintLevel <= 0)
+        {
+            isExhausted = true;
+        }
+
+        if (isExhausted)
+        {
+            exhaustLevel -= Time.deltaTime;
+
+            if (exhaustLevel <= 0)
+            {
+                isExhausted = false;
+                exhaustLevel = 2f;
+            }
+        }
     }
     
     // Setting the different variables to throw the ball
     private void ThrowingBall()
     {
         isSpaceReleasedAfterJump = false;
-        ballController.setIsballInHands(false, PLAYERNAME);
+        ballController.setIsballInHands(false, gameObject.name);
         ballController.setIsballFlying(true);
     }
 
@@ -373,11 +408,26 @@ public class BasketballController : MonoBehaviour
         }
 
         // Dribling when ball in hands and not shooting
-        if (!isInAir && ballController.getIsBallInHands(PLAYERNAME))
+        if (!isInAir && ballController.getIsBallInHands(gameObject.name))
         {
             isJumping = false;
 
             HandsDribble();
         }
+    }
+
+    public bool getPlayerIsActive()
+    {
+        return isActive;
+    }
+
+    public bool getIsExhausted()
+    {
+        return isExhausted;
+    }
+
+    public float getSprintLevel()
+    {
+        return sprintLevel;
     }
 }

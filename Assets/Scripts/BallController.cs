@@ -1,8 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
+
 
 public class BallController : MonoBehaviour
 {
@@ -104,7 +102,7 @@ public class BallController : MonoBehaviour
         Vector3 offset = new Vector3(0f, 0f, 0f); // Offsetting the original target
         float distance = Vector3.Distance(playerRigidbody.position, Target.position); // Distance between player and rim
         float height = transform.position.y; // Height of launch (9 - 15)
-
+        Debug.Log(distance);
 
         // Y coordinate offset
         offset.y += OFFSETY - ((height - MINHEIGHT) / 2f); // y offset between 0 and 3
@@ -170,18 +168,13 @@ public class BallController : MonoBehaviour
 
         else if (shotType == 1) // dunk
         {
-            duration = 0.5f;
-            offset.x = 0f;
-            offset.y = 0f;
-            offset.z = 0f;
+            if (playerRigidbody.linearVelocity.z < 0)
+            {
+                offset.z -= 3;
+                offset.y += 1;
+            }
 
-            //if (height < 13.5f)
-            //{
-            //    offset.y = 0.5f;
-            //    offset.z = -2f;
-            //}
-
-            //Debug.Log(height);
+            duration = 0.2f;
         }
 
         OffsetTarget += offset;
@@ -232,7 +225,7 @@ public class BallController : MonoBehaviour
             Rigidbody rb = GetComponent<Rigidbody>();
             rb.isKinematic = false;
 
-            if (shotType != 1) // not dunk
+            //if (shotType != 1) // not dunk
                 rb.linearVelocity = velocity;
 
             isTargetSet = false;
