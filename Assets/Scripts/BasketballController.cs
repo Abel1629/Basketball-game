@@ -16,6 +16,7 @@ public class BasketballController : MonoBehaviour
     private float dunkDuration = 0.2f; // duration of the dunk
     Vector3 DunkPos; // the position from where the player will dunk
     int shotType; // 1- dunk, 2- two pointer, 3- three pointer
+    float posessionBlocker = 0f; // getting the posession is blocked after scoring and after the timer runs out
 
     [Header("Referrences")]
 
@@ -26,11 +27,13 @@ public class BasketballController : MonoBehaviour
     [SerializeField] private Transform PosOverHead;
     [SerializeField] private Transform PosDribble;
     [SerializeField] private Transform Target;
+    [SerializeField] private GameObject ShotClockTimer;
     [SerializeField] private Transform[] DunkTarget = new Transform[3];
 
     // Components
     private Rigidbody playerRigidbody;
     private BallController ballController;
+    private TimerController timerController;
 
     // Booleans
     private bool isInAir = false; // when the player is in the air
@@ -46,6 +49,7 @@ public class BasketballController : MonoBehaviour
     {
         playerRigidbody = GetComponent<Rigidbody>();
         ballController = Ball.GetComponent<BallController>(); // referring to the basketball
+        timerController = ShotClockTimer.GetComponent<TimerController>();
         isActive = true;
     }
 
@@ -87,6 +91,17 @@ public class BasketballController : MonoBehaviour
         if (isPreparedToDunk)
         {
             Dunking();
+        }
+
+        if (timerController.GetShotclockTimer() <= 0) // if the shot clock reaches 0
+        {
+            DropBall();
+        }
+
+        if (posessionBlocker > 0)
+        {
+            posessionBlocker -= Time.deltaTime;
+            posessionBlocker = Mathf.Max(posessionBlocker, 0);
         }
     }
 
@@ -144,9 +159,11 @@ public class BasketballController : MonoBehaviour
         // When catching the ball
         if (!ballController.getIsBallFlying() && !ballController.getIsBallInHands(gameObject.name) && collision.gameObject.name == "Ball")
         {
-            ballController.setIsballInHands(true, gameObject.name);
-            Ball.GetComponent<Rigidbody>().isKinematic = true;
-            Ball.GetComponent<Collider>().enabled = false;
+            if (posessionBlocker == 0) // the player cacthes the ball only if it's posession is not blocked
+            {
+                ballController.setIsballInHands(true, gameObject.name);
+                ballController.setIsBallInAir(false);
+            }
         }
     }
 
@@ -245,9 +262,7 @@ public class BasketballController : MonoBehaviour
             TDunk = 0; // To start the dunking
             isPreparedToDunk = true;
         }
-
-        Ball.GetComponent<Collider>().enabled = true; // Giving back collisions for the ball
-    } // Shooting mechanism
+    }
 
     private void Sprint() // Sprinting mechanism
     {
@@ -414,6 +429,13 @@ public class BasketballController : MonoBehaviour
 
             HandsDribble();
         }
+    }
+
+    private void DropBall()
+    {
+        ballController.setIsballInHands(false, gameObject.name);
+        posessionBlocker = 3f; // blocking the player's posession after dropping the ball
+        ballController.setIsBallInAir(true);
     }
 
     public bool getPlayerIsActive()

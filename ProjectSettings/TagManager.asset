@@ -9,6 +9,7 @@ TagManager:
   - ThreePointer
   - TwoPointer
   - Dunk
+  - Rim
   layers:
   - Default
   - TransparentFX

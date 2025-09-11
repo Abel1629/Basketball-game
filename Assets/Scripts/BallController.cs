@@ -12,15 +12,23 @@ public class BallController : MonoBehaviour
     [SerializeField] private Transform Target;
 
     // Booleans
+    private bool isBallInAir = true;
     private bool isBallFlying = false; // when the ball is flying towards the basket
     private List<bool> isBallInHands = new List<bool>() { false, false, false, false, false, false }; // when the ball is in the hands of the player
     private bool isTargetSet = false; // setting the target where the ball will fly
+    private bool shotClockReset = false; // if the shot clock needs to be resets (by touching the rim)
 
     // Variables
     private float T = 0f; // interpolation variable
     private float duration = 0.5f; // duration of the shot
     Vector3 OffsetTarget; // offsetting the original target
     private Vector3 previousBallPosition; // for calculating the velocity of the ball
+    private Rigidbody rb;
+
+    private void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
 
     // Setting the ball to a player
     public void setIsballInHands(bool value, string playerName)
@@ -85,6 +93,31 @@ public class BallController : MonoBehaviour
         }
     }
 
+    // when the ball is in the air (but not shooting or passing)
+    public void setIsBallInAir(bool value)
+    {
+        isBallInAir = value;
+
+        if (isBallInAir)
+        {
+            rb.isKinematic = false;
+            GetComponent<Collider>().enabled = true; // Giving back collisions for the ball
+        }
+
+
+        else
+        {
+            rb.isKinematic = true;
+            GetComponent<Collider>().enabled = false; // when catching the ball, the collision is disabled
+        }
+            
+    }
+
+    public bool getIsBallInAir()
+    {
+        return isBallInAir;
+    }
+
     public void setIsballFlying(bool value)
     {
         isBallFlying = value;
@@ -95,6 +128,23 @@ public class BallController : MonoBehaviour
         return isBallFlying;
     }
 
+    public void setShotClockReset(bool state)
+    {
+        shotClockReset = state;
+    }
+
+    public bool getShotClockReset()
+    {
+        return shotClockReset;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.tag == "Rim") // if colliding with the rim the shot clock will reset
+        {
+            setShotClockReset(true);
+        }
+    }
 
     // Calculating the offset to where the shot ball will land
     private void TargetOffsetCalulation(Rigidbody playerRigidbody, int shotType)
@@ -221,12 +271,11 @@ public class BallController : MonoBehaviour
         // Moment when the ball arrives at the target
         if (t01 >= 1)
         {
-            setIsballFlying(false);
-            Rigidbody rb = GetComponent<Rigidbody>();
-            rb.isKinematic = false;
+            setIsballFlying(false); // the ball is not flying towards the basket
 
-            //if (shotType != 1) // not dunk
-                rb.linearVelocity = velocity;
+            setIsBallInAir(true); // the ball is in the air
+
+            rb.linearVelocity = velocity;
 
             isTargetSet = false;
         }

@@ -35,7 +35,7 @@ public class StaminaIndicator : MonoBehaviour
 
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (basketballController.getIsExhausted())
             for (int i = 0; i < childMeshes.Length; i++)
@@ -46,7 +46,7 @@ public class StaminaIndicator : MonoBehaviour
         else
             for (int i = 0; i < childMeshes.Length; i++)
             {
-                if (i >= basketballController.getSprintLevel()) // when using stamina, the stamina bar will decrease
+                if (i >= basketballController.getSprintLevel() * 2) // when using stamina, the stamina bar will decrease
                 {
                     childMeshes[i].material = invisibleMaterial;
                 }
