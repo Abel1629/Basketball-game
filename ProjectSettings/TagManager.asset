@@ -10,6 +10,7 @@ TagManager:
   - TwoPointer
   - Dunk
   - Rim
+  - ShotDetector
   layers:
   - Default
   - TransparentFX

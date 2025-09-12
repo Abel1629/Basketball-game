@@ -1,22 +1,22 @@
 ﻿using UnityEngine;
 
-public class BasketballController : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
     // Constants
+    private const float runSpeed = 2f; // running multiplyer
+    private const float dunkDuration = 0.2f; // duration of the dunk
 
     [Header("Variables")]
     [SerializeField] private float moveSpeed = 10f; // speed of movement (DO NOT CHANGE)
     [SerializeField] private float jumpHeight = 10f; // height of jump (DO NOT CHANGE)
                                                      
     private Vector3 direction; // direction where the player is moving
-    private float runSpeed = 2f; // running multiplyer
     private float sprintLevel = 4f; // the remaining sprint amount
     private float exhaustLevel = 2f;
     private float TDunk = 0f; // dunk position interpolation variable
-    private float dunkDuration = 0.2f; // duration of the dunk
+    
     Vector3 DunkPos; // the position from where the player will dunk
     int shotType; // 1- dunk, 2- two pointer, 3- three pointer
-    float posessionBlocker = 0f; // getting the posession is blocked after scoring and after the timer runs out
 
     [Header("Referrences")]
 
@@ -34,6 +34,7 @@ public class BasketballController : MonoBehaviour
     private Rigidbody playerRigidbody;
     private BallController ballController;
     private TimerController timerController;
+    private TeamStats teamStats;
 
     // Booleans
     private bool isInAir = false; // when the player is in the air
@@ -51,6 +52,7 @@ public class BasketballController : MonoBehaviour
         ballController = Ball.GetComponent<BallController>(); // referring to the basketball
         timerController = ShotClockTimer.GetComponent<TimerController>();
         isActive = true;
+        teamStats = GetComponentInParent<TeamStats>();
     }
 
     // Update is called once per frame
@@ -96,12 +98,6 @@ public class BasketballController : MonoBehaviour
         if (timerController.GetShotclockTimer() <= 0) // if the shot clock reaches 0
         {
             DropBall();
-        }
-
-        if (posessionBlocker > 0)
-        {
-            posessionBlocker -= Time.deltaTime;
-            posessionBlocker = Mathf.Max(posessionBlocker, 0);
         }
     }
 
@@ -159,7 +155,7 @@ public class BasketballController : MonoBehaviour
         // When catching the ball
         if (!ballController.getIsBallFlying() && !ballController.getIsBallInHands(gameObject.name) && collision.gameObject.name == "Ball")
         {
-            if (posessionBlocker == 0) // the player cacthes the ball only if it's posession is not blocked
+            if (!teamStats.GetIsTeamPosessionBlocked()) // the player cacthes the ball only if it's posession is not blocked
             {
                 ballController.setIsballInHands(true, gameObject.name);
                 ballController.setIsBallInAir(false);
@@ -408,18 +404,10 @@ public class BasketballController : MonoBehaviour
             Shoot();
         }
 
-        // If ball not thrown before landing(it will be automatically thrown)
+        // If ball not thrown before landing(it will be automatically dropped)
         if (!isInAir && isSpaceReleasedAfterJump)
         {
-            if (shotType == 1) // If it is in the dunk zone it will just shoot the ball if landed
-            {
-                SetShootingForm("TwoPointer");
-                Shoot();
-            }
-
-            else
-                Shoot();
-            
+            DropBall();
         }
 
         // Dribling when ball in hands and not shooting
@@ -434,8 +422,9 @@ public class BasketballController : MonoBehaviour
     private void DropBall()
     {
         ballController.setIsballInHands(false, gameObject.name);
-        posessionBlocker = 3f; // blocking the player's posession after dropping the ball
+        teamStats.SetTeamPosessionBlocked();
         ballController.setIsBallInAir(true);
+        isSpaceReleasedAfterJump = false;
     }
 
     public bool getPlayerIsActive()

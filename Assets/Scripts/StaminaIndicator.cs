@@ -9,12 +9,12 @@ public class StaminaIndicator : MonoBehaviour
 
     private MeshRenderer[] meshRenderer; // rendering the materials
     private MeshRenderer[] childMeshes; // only the child meshes are stored
-    private BasketballController basketballController; // accessing the parent(player)
+    private PlayerController basketballController; // accessing the parent(player)
 
     private void Start()
     {
         meshRenderer = GetComponentsInChildren<MeshRenderer>();
-        basketballController = GetComponentInParent<BasketballController>();
+        basketballController = GetComponentInParent<PlayerController>();
         for (int i = 0; i < meshRenderer.Length; i++)
         {
             meshRenderer[i].material = staminaMaterial; // starting with full stamina bar

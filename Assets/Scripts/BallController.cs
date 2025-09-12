@@ -152,7 +152,6 @@ public class BallController : MonoBehaviour
         Vector3 offset = new Vector3(0f, 0f, 0f); // Offsetting the original target
         float distance = Vector3.Distance(playerRigidbody.position, Target.position); // Distance between player and rim
         float height = transform.position.y; // Height of launch (9 - 15)
-        Debug.Log(distance);
 
         // Y coordinate offset
         offset.y += OFFSETY - ((height - MINHEIGHT) / 2f); // y offset between 0 and 3
@@ -278,6 +277,22 @@ public class BallController : MonoBehaviour
             rb.linearVelocity = velocity;
 
             isTargetSet = false;
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("ShotDetector"))
+        {
+            Debug.Log("Ball entered the trigger: " + other.name);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.CompareTag("ShotDetector"))
+        {
+            Debug.Log("Ball left the trigger: " + other.name);
         }
     }
 }

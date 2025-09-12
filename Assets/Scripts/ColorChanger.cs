@@ -6,12 +6,12 @@ public class ColorChanger : MonoBehaviour
     [SerializeField] private Material playerInactiveMaterial; // Inactive player color
 
     private MeshRenderer meshRenderer; // rendering the material
-    private BasketballController basketballController; // accessing the parent(player)
+    private PlayerController basketballController; // accessing the parent(player)
 
     private void Start()
     {
         meshRenderer = GetComponent<MeshRenderer>();
-        basketballController = GetComponentInParent<BasketballController>();
+        basketballController = GetComponentInParent<PlayerController>();
         meshRenderer.material = playerInactiveMaterial;
     }
 
