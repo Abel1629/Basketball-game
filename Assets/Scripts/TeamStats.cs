@@ -3,6 +3,7 @@ using UnityEngine;
 public class TeamStats : MonoBehaviour
 {
     private float posessionBlocker = 0f; // Counting how long the posession is blocked for the team
+    [SerializeField] private bool hasPosession = true; // checking if the team has got the posession
 
     private void Update()
     {
@@ -25,5 +26,13 @@ public class TeamStats : MonoBehaviour
         return (posessionBlocker > 0);
     }
 
+    public void setHasPosession(bool value)
+    {
+        hasPosession = value;
+    }
 
+    public bool getHasPosession()
+    {
+        return hasPosession;
+    }
 }

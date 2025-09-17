@@ -29,12 +29,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform Target;
     [SerializeField] private GameObject ShotClockTimer;
     [SerializeField] private Transform[] DunkTarget = new Transform[3];
+    [SerializeField] private GameObject PosessionManager;
 
     // Components
     private Rigidbody playerRigidbody;
     private BallController ballController;
     private TimerController timerController;
     private TeamStats teamStats;
+    private PosessionChanger posessionChanger;
 
     // Booleans
     private bool isInAir = false; // when the player is in the air
@@ -53,6 +55,7 @@ public class PlayerController : MonoBehaviour
         timerController = ShotClockTimer.GetComponent<TimerController>();
         isActive = true;
         teamStats = GetComponentInParent<TeamStats>();
+        posessionChanger = PosessionManager.GetComponent<PosessionChanger>();
     }
 
     // Update is called once per frame
@@ -84,10 +87,10 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Ball in the air
+        // Ball flying towards basket
         if (ballController.getIsBallFlying())
         {
-            ballController.BallTrajectory(PosOverHead.position, playerRigidbody, shotType);
+            ballController.BallTrajectory(PosOverHead.position, playerRigidbody, shotType); // shooting the ball towards the basket
         }
 
         if (isPreparedToDunk)
@@ -95,9 +98,11 @@ public class PlayerController : MonoBehaviour
             Dunking();
         }
 
-        if (timerController.GetShotclockTimer() <= 0) // if the shot clock reaches 0
+        if (timerController.GetShotclockTimer() <= 0 && ballController.getIsBallInHands(gameObject.name)) // if the shot clock reaches 0 and the player still has the ball in his hands++
         {
             DropBall();
+            // AFTER IMPLEMENTING THE TWO TEAMS
+            //posessionChanger.ChangePosession(); // giving the posession for the other team
         }
     }
 

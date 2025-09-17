@@ -10,9 +10,6 @@ public class TimerController : MonoBehaviour
     private float timerSeconds;
     private TextMeshPro timerText;
 
-    //private bool selfPosession = true;
-    //private bool enemyPosession = false;
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -25,22 +22,15 @@ public class TimerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (ballController.getShotClockReset()) // if the shot clock needs to be reset
-        {
-            timerSeconds = 14f;
-            ballController.setShotClockReset(false);
-        }
-            
-
-        else if (timerSeconds > 0) // the shot clock will count towards zero
+        if (timerSeconds > 0) // the shot clock will count towards zero
         {
             timerSeconds -= Time.deltaTime;
-            timerSeconds = Mathf.Max(timerSeconds, 0);
+            timerSeconds = Mathf.Max(timerSeconds, 0); // it ensures the timer will never go below zero
         }
 
-        if (timerSeconds < 10)
+        if (timerSeconds < 10) // changing the format of the text
         {
-            if (timerSeconds < 5)
+            if (timerSeconds < 5) // changing the color of the text
             {
                 timerText.color = Color.red;
             }
@@ -59,6 +49,11 @@ public class TimerController : MonoBehaviour
     public float GetShotclockTimer()
     {
         return timerSeconds;
+    }
+
+    public void ResetShotClock() // Reseting the shot clock
+    {
+        timerSeconds = 14f;
     }
 }
 

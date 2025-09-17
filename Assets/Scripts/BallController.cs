@@ -10,24 +10,32 @@ public class BallController : MonoBehaviour
 
     // References
     [SerializeField] private Transform Target;
+    [SerializeField] private GameObject ShotClockTimerText;
+    [SerializeField] private GameObject ScoreText;
+
+    // Components
+    private Rigidbody rb; // the rigid body of the ball
+    private TimerController timerController; // it controlls the shot clock
+    private ScoreController scoreController; // it will controll the score on the scoreboard
 
     // Booleans
-    private bool isBallInAir = true;
+    private bool isBallInAir = true; // when the ball is in the air, but not moving towards the basket
     private bool isBallFlying = false; // when the ball is flying towards the basket
     private List<bool> isBallInHands = new List<bool>() { false, false, false, false, false, false }; // when the ball is in the hands of the player
     private bool isTargetSet = false; // setting the target where the ball will fly
-    private bool shotClockReset = false; // if the shot clock needs to be resets (by touching the rim)
 
     // Variables
     private float T = 0f; // interpolation variable
     private float duration = 0.5f; // duration of the shot
     Vector3 OffsetTarget; // offsetting the original target
     private Vector3 previousBallPosition; // for calculating the velocity of the ball
-    private Rigidbody rb;
+    private int lastShotType; // it stores the type of the last shot
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        timerController = ShotClockTimerText.GetComponent<TimerController>();
+        scoreController = ScoreText.GetComponent<ScoreController>();
     }
 
     // Setting the ball to a player
@@ -79,13 +87,13 @@ public class BallController : MonoBehaviour
             case "Player3":
                 return isBallInHands[2];
 
-            case "Player4":
+            case "Enemy1":
                 return isBallInHands[3];
 
-            case "Player5":
+            case "Enemy2":
                 return isBallInHands[4];
 
-            case "Player6":
+            case "Enemy3":
                 return isBallInHands[5];
 
             default:
@@ -128,21 +136,11 @@ public class BallController : MonoBehaviour
         return isBallFlying;
     }
 
-    public void setShotClockReset(bool state)
-    {
-        shotClockReset = state;
-    }
-
-    public bool getShotClockReset()
-    {
-        return shotClockReset;
-    }
-
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.tag == "Rim") // if colliding with the rim the shot clock will reset
         {
-            setShotClockReset(true);
+            timerController.ResetShotClock();
         }
     }
 
@@ -226,6 +224,8 @@ public class BallController : MonoBehaviour
             duration = 0.2f;
         }
 
+        lastShotType = shotType;
+
         OffsetTarget += offset;
         isTargetSet = true;
     }
@@ -280,19 +280,15 @@ public class BallController : MonoBehaviour
         }
     }
 
+    // if the ball enters the rim
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("ShotDetector"))
         {
-            Debug.Log("Ball entered the trigger: " + other.name);
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.CompareTag("ShotDetector"))
-        {
-            Debug.Log("Ball left the trigger: " + other.name);
+            scoreController.ChangeScore(lastShotType); // adding the score to the scoreboard
+            timerController.ResetShotClock(); // resetting the shot clock
+            // AFTER IMPLEMENTING THE TWO TEAMS
+            //posessionChanger.ChangePosession(); // giving the posession for the other team
         }
     }
 }
