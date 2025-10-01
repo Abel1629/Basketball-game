@@ -6,26 +6,25 @@ public class PlayerController : MonoBehaviour
     private const float runSpeed = 2f; // running multiplyer
     private const float dunkDuration = 0.2f; // duration of the dunk
 
+    // Variables
     [Header("Variables")]
     [SerializeField] private float moveSpeed = 10f; // speed of movement (DO NOT CHANGE)
     [SerializeField] private float jumpHeight = 10f; // height of jump (DO NOT CHANGE)
-                                                     
-    private Vector3 direction; // direction where the player is moving
+                                                    
     private float sprintLevel = 4f; // the remaining sprint amount
     private float exhaustLevel = 2f;
     private float TDunk = 0f; // dunk position interpolation variable
-    
-    Vector3 DunkPos; // the position from where the player will dunk
-    int shotType; // 1- dunk, 2- two pointer, 3- three pointer
+
+    private Vector3 direction; // direction where the player is moving
+    private Vector3 dunkPos; // the position from where the player will dunk
+    private Vector3 moveVelocity; // Set velocity based on input
+    private int shotType; // 1- dunk, 2- two pointer, 3- three pointer
 
     [Header("Referrences")]
 
     // References
     [SerializeField] private Transform Ball;
-    [SerializeField] private Transform Arms;
-    [SerializeField] private Transform RightHand;
     [SerializeField] private Transform PosOverHead;
-    [SerializeField] private Transform PosDribble;
     [SerializeField] private Transform Target;
     [SerializeField] private GameObject ShotClockTimer;
     [SerializeField] private Transform[] DunkTarget = new Transform[3];
@@ -37,6 +36,7 @@ public class PlayerController : MonoBehaviour
     private TimerController timerController;
     private TeamStats teamStats;
     private PosessionChanger posessionChanger;
+    private PlayerAnimationController playerAnimationController;
 
     // Booleans
     private bool isInAir = false; // when the player is in the air
@@ -56,15 +56,13 @@ public class PlayerController : MonoBehaviour
         isActive = true;
         teamStats = GetComponentInParent<TeamStats>();
         posessionChanger = PosessionManager.GetComponent<PosessionChanger>();
+        playerAnimationController = GetComponent<PlayerAnimationController>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        // Changing direction of the player based on input
-        direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
-
-        Sprint(); // Sprinting
+        MovePlayer(); // Sprinting/ walking
 
         // Ball in hands
         if (ballController.getIsBallInHands(gameObject.name))
@@ -75,13 +73,11 @@ public class PlayerController : MonoBehaviour
         // If the ball is not in the hand
         else
         {
-            // Putting the hands in normal position
-            HandsDown();
-
             // Jumping without the ball
             if (Input.GetKey(KeyCode.Space) && !isInAir)
             {
-                HandsUp();
+                playerAnimationController.JumpAnimation();
+
                 isInAir = true;
                 isJumping = true;
             }
@@ -102,7 +98,7 @@ public class PlayerController : MonoBehaviour
         {
             DropBall();
             // AFTER IMPLEMENTING THE TWO TEAMS
-            //posessionChanger.ChangePosession(); // giving the posession for the other team
+            // posessionChanger.ChangePosession(); // giving the posession for the other team
         }
     }
 
@@ -113,7 +109,7 @@ public class PlayerController : MonoBehaviour
         float currentSpeed = isSprinting ? moveSpeed * runSpeed : moveSpeed;
 
         // Set velocity based on input
-        Vector3 moveVelocity = direction * currentSpeed;
+        moveVelocity = direction * currentSpeed;
 
         // Keep existing Y velocity (important for gravity & jumping)
         moveVelocity.y = playerRigidbody.linearVelocity.y;
@@ -122,7 +118,7 @@ public class PlayerController : MonoBehaviour
         playerRigidbody.linearVelocity = moveVelocity;
 
         // Jumping
-        if (isJumping) 
+        if (isJumping)
         {
             Jump();
         }
@@ -146,6 +142,7 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.name == "Ground")
         {
             isInAir = false; // the player is on the ground
+            playerAnimationController.HandsDownAnimation();
         }
 
         if (collision.gameObject.CompareTag("TwoPointer"))
@@ -186,61 +183,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // When second space is hit with the ball in the hand
-    private void HandsShooting()
-    {
-        // Raise hands and move ball over head
-        RightHand.localEulerAngles = Vector3.left * 0;
-        Ball.position = PosOverHead.position;
-        Arms.localEulerAngles = Vector3.left * 130;
-    }
-
-    // When first space is hit with the ball in the hand
-    private void HandsPreparingForShooting()
-    {
-        // Raise hands and move ball over head
-        RightHand.localEulerAngles = Vector3.left * 0;
-        Ball.position = PosOverHead.position;
-        Arms.localEulerAngles = Vector3.left * 160;
-    }
-
-    // Normal hand position
-    private void HandsDown()
-    {
-        // Putting hands in normal position
-        if (!ballController.getIsBallInHands(gameObject.name) && !isInAir && !ballController.getIsBallFlying())
-        {
-            RightHand.localEulerAngles = Vector3.left * 0;
-            Arms.localEulerAngles = Vector3.left * 0;
-        }
-    }
-
-    // Dribbling hand position
-    private void HandsDribble()
-    {
-        // Dribble animation
-        Ball.position = PosDribble.position + Vector3.up * Mathf.Abs(Mathf.Sin(Time.time * 5));
-        Arms.localEulerAngles = Vector3.left * 0;
-
-        // Rotate the right hand in front of the player
-        RightHand.localEulerAngles = Vector3.left * 20;
-    }
-
-    // Jumping without the ball
-    private void HandsUp()
-    {
-        // Raise hands up vertically
-        RightHand.localEulerAngles = Vector3.left * 0;
-        Arms.localEulerAngles = Vector3.left * 180;
-    }
-
-    private void HandsDunking()
-    {
-        // Move the hands to a horizontal position
-        RightHand.localEulerAngles = Vector3.left * 0;
-        Arms.localEulerAngles = Vector3.left * 90;
-    }
-
+    // Jumping mechanism
     private void Jump()
     {
         isInAir = true;
@@ -248,13 +191,16 @@ public class PlayerController : MonoBehaviour
 
         // Preventing double jumping
         isJumping = false;
-    } // Jumping mechanism
+    }
 
     private void Shoot()
     {
         if (shotType != 1) // not a dunk
         {
-            HandsShooting();
+            // moving the hand to the shooting position
+            Ball.position = PosOverHead.position;
+            playerAnimationController.HandsShootingAnimation();
+
             ThrowingBall();
         }
 
@@ -265,7 +211,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Sprint() // Sprinting mechanism
+    private void MovePlayer() // Moving mechanism
     {
         // Changing direction of the player based on input
         direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
@@ -290,6 +236,7 @@ public class PlayerController : MonoBehaviour
                     sprintLevel = Mathf.Min(sprintLevel, 4);
                 }
             }
+
         }
 
         if (sprintLevel <= 0)
@@ -323,7 +270,7 @@ public class PlayerController : MonoBehaviour
         // Initializing the dunk point
         if (!isDunkPositionSet)
         {
-            DunkPos = ClosestDunkPosition();
+            dunkPos = ClosestDunkPosition();
         }
 
         TDunk += Time.deltaTime;
@@ -332,7 +279,7 @@ public class PlayerController : MonoBehaviour
 
         // Move to dunk target
         Vector3 A = playerRigidbody.position;
-        Vector3 B = DunkPos;
+        Vector3 B = dunkPos;
         Vector3 pos = Vector3.Lerp(A, B, t01);
 
         // Move linearly the player to the dunk point
@@ -343,7 +290,8 @@ public class PlayerController : MonoBehaviour
             isPreparedToDunk = false;
             isDunkPositionSet = false;
 
-            HandsDunking();
+            // moving the hand in the dunking position
+            playerAnimationController.HandsDunkingAnimation();
 
             ThrowingBall();
         }
@@ -393,7 +341,8 @@ public class PlayerController : MonoBehaviour
         if (isInAir)
         {
             // Raise the hands to prepare for shooting the ball
-            HandsPreparingForShooting();
+            Ball.position = PosOverHead.position;
+            playerAnimationController.HandsPreparingForShootingAnimation();
             LookAtTarget(Target);
         }
 
@@ -419,8 +368,7 @@ public class PlayerController : MonoBehaviour
         if (!isInAir && ballController.getIsBallInHands(gameObject.name))
         {
             isJumping = false;
-
-            HandsDribble();
+            // the dribling is implemented in the player animation controller
         }
     }
 
@@ -445,5 +393,10 @@ public class PlayerController : MonoBehaviour
     public float getSprintLevel()
     {
         return sprintLevel;
+    }
+
+    public float GetMoveVelocityMagnitude()
+    {
+        return Mathf.Round(moveVelocity.magnitude);
     }
 }

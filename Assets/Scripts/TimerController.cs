@@ -28,7 +28,7 @@ public class TimerController : MonoBehaviour
             timerSeconds = Mathf.Max(timerSeconds, 0); // it ensures the timer will never go below zero
         }
 
-        if (timerSeconds < 10) // changing the format of the text
+        if (timerSeconds < 9.9f) // changing the format of the text
         {
             if (timerSeconds < 5) // changing the color of the text
             {

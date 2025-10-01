@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class ScoreController : MonoBehaviour
 {
+    // Refferrences
     [SerializeField] private GameObject PosessionManager;
 
+    // Components
     private PosessionChanger posessionChanger;
 
     private TextMeshPro text;
